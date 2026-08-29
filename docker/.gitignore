@@ -10,7 +10,8 @@ volumes/functions/main/**
 volumes/functions/hello/**
 !volumes/functions/hello/index.ts
 .env
-test.http
-docker-compose.override.yml
+.env.old
 .supabase-version
 backups
+docker-compose.override.yml
+test.http
