@@ -1,8 +1,9 @@
+import { type Hotkey } from '@tanstack/react-hotkeys'
 import { useDebounce } from '@uidotdev/usehooks'
 import { LOCAL_STORAGE_KEYS, useParams } from 'common'
-import { Check, Keyboard, Loader2, MoreVertical, Save, SquareCode } from 'lucide-react'
+import { AlignLeft, Check, Keyboard, Loader2, MoreVertical, Save, SquareCode } from 'lucide-react'
 import { useRouter } from 'next/router'
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import {
   Button,
@@ -14,16 +15,18 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
+  KeyboardShortcut,
 } from 'ui'
 import { ShimmeringLoader } from 'ui-patterns/ShimmeringLoader'
 
 import { ExplorerToolbarAction } from './ExplorerToolbar'
 import { useCreateNotebook } from './hooks'
-import { QueryEditor, type ExplorerQueryModel } from './QueryEditor'
+import { QueryEditor, type ExplorerQueryModel, type QueryEditorHandle } from './QueryEditor'
 import { type QueryDisplay, type QueryResult } from './types'
 import { createQueryCellSkeleton } from './utils'
 import { getNotebook } from '@/data/content/notebooks/notebook-query'
@@ -33,6 +36,8 @@ import { useLocalStorageQuery } from '@/hooks/misc/useLocalStorage'
 import { explorerQueryState, useExplorerQueryStateSnapshot } from '@/state/explorer-query'
 import { useNotebooksStateSnapshot } from '@/state/notebooks/notebooks-state'
 import { useControlledRoleImpersonationState } from '@/state/role-impersonation-state'
+import { hotkeyToKeys } from '@/state/shortcuts/formatShortcut'
+import { SHORTCUT_DEFINITIONS, SHORTCUT_IDS } from '@/state/shortcuts/registry'
 import { createTabId, TabsStateContext } from '@/state/tabs'
 
 /** Query-tab lifecycle adapter around the shared QueryEditor. */
@@ -49,6 +54,12 @@ export const ExplorerQueryTab = () => {
     LOCAL_STORAGE_KEYS.SQL_EDITOR_INTELLISENSE,
     true
   )
+
+  const queryEditorRef = useRef<QueryEditorHandle>(null)
+
+  const hotkeySequnece: Hotkey | undefined =
+    SHORTCUT_DEFINITIONS[SHORTCUT_IDS.SQL_EDITOR_FORMAT].sequence[0]
+  const formatKeys = hotkeySequnece ? hotkeyToKeys(hotkeySequnece) : undefined
 
   const [restoredQueryKey, setRestoredQueryKey] = useState<string>()
   const [showQuery, setShowQuery] = useState(true)
@@ -69,6 +80,7 @@ export const ExplorerQueryTab = () => {
   const draft = stateDraft?.projectRef === ref ? stateDraft : undefined
   const result = draft && id ? querySnap.results[id] : undefined
   const queryKey = id && ref ? `${ref}:${id}` : undefined
+  const isDraftReady = !!queryKey && restoredQueryKey === queryKey
 
   const roleImpersonationState = useControlledRoleImpersonationState(
     draft?._tag === 'database' ? draft.role : undefined,
@@ -87,6 +99,13 @@ export const ExplorerQueryTab = () => {
     explorerQueryState.restoreDraft({ id, projectRef: ref })
     setRestoredQueryKey(`${ref}:${id}`)
   }, [id, ref])
+
+  useEffect(() => {
+    if (!id || !isDraftReady || !draft?.pendingAutoRun) return
+
+    queryEditorRef.current?.run()
+    explorerQueryState.clearPendingAutoRun({ id })
+  }, [id, isDraftReady, draft?.pendingAutoRun])
 
   if (!queryKey || restoredQueryKey !== queryKey) {
     return (
@@ -110,7 +129,9 @@ export const ExplorerQueryTab = () => {
             This local draft may have been closed or cleared from this browser.
           </p>
         </div>
-        <Button onClick={() => router.push(`/project/${ref}/explorer`)}>Back to Explorer</Button>
+        <Button variant="primary" onClick={() => router.push(`/project/${ref}/explorer`)}>
+          Back to Explorer
+        </Button>
       </div>
     )
   }
@@ -166,6 +187,7 @@ export const ExplorerQueryTab = () => {
 
   return (
     <QueryEditor
+      ref={queryEditorRef}
       id={id}
       variant="viewport"
       title={draft.name}
@@ -177,7 +199,7 @@ export const ExplorerQueryTab = () => {
       roleImpersonationState={roleImpersonationState}
       onTitleChange={(value) => {
         persistTab()
-        const name = value.trim() || 'Untitled query'
+        const name = value.trim() || 'Run SQL'
         explorerQueryState.updateDraft({ id, name })
         tabs.updateTab(createTabId('query', { id }), { label: name })
       }}
@@ -202,7 +224,10 @@ export const ExplorerQueryTab = () => {
         <>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <ExplorerToolbarAction icon={<Save />} tooltip="Save query" />
+              <ExplorerToolbarAction
+                icon={<Save size={16} strokeWidth={2} />}
+                tooltip="Save query"
+              />
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-52" align="end">
               <DropdownMenuSub>
@@ -250,9 +275,9 @@ export const ExplorerQueryTab = () => {
           </DropdownMenu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <ExplorerToolbarAction icon={<MoreVertical />} />
+              <ExplorerToolbarAction icon={<MoreVertical size={16} strokeWidth={2} />} />
             </DropdownMenuTrigger>
-            <DropdownMenuContent>
+            <DropdownMenuContent className="w-48" align="end">
               <DropdownMenuItem
                 className="justify-between"
                 onClick={() => setIsIntellisenseEnabled(!isIntellisenseEnabled)}
@@ -262,6 +287,17 @@ export const ExplorerQueryTab = () => {
                   <span>Intellisense enabled</span>
                 </div>
                 {isIntellisenseEnabled && <Check className="text-brand" size={16} />}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="justify-between"
+                onClick={() => queryEditorRef.current?.prettify()}
+              >
+                <span className="flex items-center gap-x-2">
+                  <AlignLeft size={14} />
+                  Prettify SQL
+                </span>
+                {formatKeys && <KeyboardShortcut keys={formatKeys} />}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
