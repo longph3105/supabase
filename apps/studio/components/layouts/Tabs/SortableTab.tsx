@@ -1,7 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { AnimatePresence, motion } from 'framer-motion'
-import { X } from 'lucide-react'
+import { XIcon } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
 import { useMemo, type KeyboardEvent } from 'react'
 import { cn, TabsTrigger } from 'ui'
 
@@ -79,7 +79,7 @@ export const SortableTab = ({
       layoutId={tab.id}
       transition={{ duration: 0.045 }}
       animate={{ opacity: isDragging ? 0 : 1 }}
-      className={cn('flex items-center h-(--header-height) first-of-type:border-l')}
+      className={cn('flex items-center h-(--header-height)', index === 0 && 'border-l')}
     >
       <div className="group/tab relative flex h-full min-w-0 items-center">
         <TabsTrigger
@@ -164,7 +164,7 @@ export const SortableTab = ({
               'cursor-pointer'
             )}
           >
-            <X size={12} className="text-foreground-light" />
+            <XIcon size={12} className="text-foreground-light" />
           </button>
         )}
       </div>

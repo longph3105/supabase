@@ -9,7 +9,7 @@ import {
   Storage,
   TableEditor,
 } from 'icons'
-import { Blocks, Lightbulb, List, Settings, Telescope } from 'lucide-react'
+import { BlocksIcon, LightbulbIcon, ListIcon, SettingsIcon, TelescopeIcon } from 'lucide-react'
 
 import {
   useIsExplorerEnabled,
@@ -178,6 +178,7 @@ export const generateProductRoutes = (
             icon: <Compute size={ICON_SIZE} strokeWidth={ICON_STROKE_WIDTH} />,
             link: ref && (isProjectBuilding ? buildingUrl : `/project/${ref}/compute`),
             isNew: true,
+            shortcutId: SHORTCUT_IDS.NAV_COMPUTE,
           },
         ]
       : []),
@@ -212,7 +213,7 @@ export const generateOtherRoutes = (
       key: 'advisors',
       label: 'Advisors',
       disabled: !isProjectActive,
-      icon: <Lightbulb size={ICON_SIZE} strokeWidth={ICON_STROKE_WIDTH} />,
+      icon: <LightbulbIcon size={ICON_SIZE} strokeWidth={ICON_STROKE_WIDTH} />,
       link: ref && (isProjectBuilding ? buildingUrl : `/project/${ref}/advisors/security`),
       shortcutId: SHORTCUT_IDS.NAV_ADVISORS,
     },
@@ -222,7 +223,7 @@ export const generateOtherRoutes = (
             key: 'observability',
             label: 'Observability',
             disabled: !isProjectActive,
-            icon: <Telescope size={ICON_SIZE} strokeWidth={ICON_STROKE_WIDTH} />,
+            icon: <TelescopeIcon size={ICON_SIZE} strokeWidth={ICON_STROKE_WIDTH} />,
             link:
               ref &&
               (isProjectBuilding
@@ -240,7 +241,7 @@ export const generateOtherRoutes = (
             key: 'logs',
             label: 'Logs',
             disabled: false,
-            icon: <List size={ICON_SIZE} strokeWidth={ICON_STROKE_WIDTH} />,
+            icon: <ListIcon size={ICON_SIZE} strokeWidth={ICON_STROKE_WIDTH} />,
             link:
               ref &&
               (unifiedLogsEnabled ? `/project/${ref}/logs` : `/project/${ref}/logs/explorer`),
@@ -252,7 +253,7 @@ export const generateOtherRoutes = (
       key: 'integrations',
       label: 'Integrations',
       disabled: !isProjectActive,
-      icon: <Blocks size={ICON_SIZE} strokeWidth={ICON_STROKE_WIDTH} />,
+      icon: <BlocksIcon size={ICON_SIZE} strokeWidth={ICON_STROKE_WIDTH} />,
       link: ref && (isProjectBuilding ? buildingUrl : `/project/${ref}/integrations`),
       shortcutId: SHORTCUT_IDS.NAV_INTEGRATIONS,
     },
@@ -279,7 +280,7 @@ export const generateSettingsRoutes = (ref?: string): Route[] => {
     {
       key: 'settings',
       label: 'Project Settings',
-      icon: <Settings size={ICON_SIZE} strokeWidth={ICON_STROKE_WIDTH} />,
+      icon: <SettingsIcon size={ICON_SIZE} strokeWidth={ICON_STROKE_WIDTH} />,
       link: ref && `/project/${ref}/settings/general`,
       disabled: false,
       shortcutId: SHORTCUT_IDS.NAV_SETTINGS,
